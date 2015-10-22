@@ -1,6 +1,8 @@
 # ReadWriteLocks
 
-[![Build Status](https://travis-ci.org/iamed2/ReadWriteLocks.jl.svg?branch=master)](https://travis-ci.org/iamed2/ReadWriteLocks.jl)
+[![Build Status](https://travis-ci.org/invenia/ReadWriteLocks.jl.svg?branch=master)](https://travis-ci.org/invenia/ReadWriteLocks.jl)
+[![Build status](https://ci.appveyor.com/api/projects/status/qxqgjon7ocblik3q?svg=true)](https://ci.appveyor.com/project/iamed2/readwritelocks-jl)
+[![codecov.io](https://codecov.io/github/invenia/ReadWriteLocks.jl/coverage.svg?branch=master)](https://codecov.io/github/invenia/ReadWriteLocks.jl?branch=master)
 
 ## Compatibility
 
