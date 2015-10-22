@@ -17,7 +17,17 @@ if !isdefined(Base, :Mutex)
     unlock!(x::Mutex) = unlock(x)
 end
 
-type ReadWriteLock
+abstract _Lock
+
+immutable ReadLock{T<:_Lock}
+    rwlock::T
+end
+
+immutable WriteLock{T<:_Lock}
+    rwlock::T
+end
+
+type ReadWriteLock <: _Lock
     readers::Int
     writer::Bool
     lock::Mutex  # reentrant mutex
@@ -36,10 +46,6 @@ end
 
 read_lock(rwlock::ReadWriteLock) = rwlock.read_lock
 write_lock(rwlock::ReadWriteLock) = rwlock.write_lock
-
-immutable ReadLock
-    rwlock::ReadWriteLock
-end
 
 function lock!(read_lock::ReadLock)
     rwlock = read_lock.rwlock
@@ -72,10 +78,6 @@ function unlock!(read_lock::ReadLock)
     end
 
     return nothing
-end
-
-immutable WriteLock
-    rwlock::ReadWriteLock
 end
 
 function lock!(write_lock::WriteLock)
