@@ -10,6 +10,6 @@ notifications:
   email: false
 script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia -e 'Pkg.clone(pwd()); Pkg.build("ReadWriteLock"); Pkg.test("ReadWriteLock"; coverage=true)'
+  - julia -e 'Pkg.clone(pwd()); Pkg.build("ReadWriteLocks"); Pkg.test("ReadWriteLocks"; coverage=true)'
 after_success:
-  - julia -e 'cd(Pkg.dir("ReadWriteLock")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
+  - julia -e 'cd(Pkg.dir("ReadWriteLocks")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'

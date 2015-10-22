@@ -1,6 +1,6 @@
-# ReadWriteLock
+# ReadWriteLocks
 
-[![Build Status](https://travis-ci.org/iamed2/ReadWriteLock.jl.svg?branch=master)](https://travis-ci.org/iamed2/ReadWriteLock.jl)
+[![Build Status](https://travis-ci.org/iamed2/ReadWriteLocks.jl.svg?branch=master)](https://travis-ci.org/iamed2/ReadWriteLocks.jl)
 
 ## Compatibility
 
@@ -8,7 +8,7 @@ This package is meant to be compatible with Julia's lightweight threads (where i
 
 ## License
 
-ReadWriteLock.jl is provided under the MIT "Expat" License.
+ReadWriteLocks.jl is provided under the MIT "Expat" License.
 
 ## Citation
 
