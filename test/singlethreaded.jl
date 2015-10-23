@@ -113,4 +113,70 @@ facts("Two-threaded tests") do
         end
     end
 
+    context("read and write locks") do
+        context("write then read") do
+            rwlock = ReadWriteLock()
+            wlock = write_lock(rwlock)
+            rlock = read_lock(rwlock)
+
+            c = Channel{Symbol}(1)
+            put!(c, :pretest)
+
+            @async begin
+                @fact rwlock.writer --> false
+                @fact rwlock.readers --> 0
+                @fact lock!(wlock) --> nothing
+                @fact rwlock.writer --> true
+                @fact rwlock.readers --> 0
+                @fact take!(c) --> :pretest
+                put!(c, :prelock)
+                @fact lock!(rlock) --> nothing
+
+                # this code should never be reached
+                @fact take!(c) --> :prelock
+                put!(c, :postlock)
+            end
+
+            sleep(1)
+
+            @fact take!(c) --> :prelock
+            put!(c, :posttest)
+
+            @fact rwlock.writer --> true
+            @fact rwlock.readers --> 0
+        end
+
+        context("read then write") do
+            rwlock = ReadWriteLock()
+            wlock = write_lock(rwlock)
+            rlock = read_lock(rwlock)
+
+            c = Channel{Symbol}(1)
+            put!(c, :pretest)
+
+            @async begin
+                @fact rwlock.writer --> false
+                @fact rwlock.readers --> 0
+                @fact lock!(rlock) --> nothing
+                @fact rwlock.writer --> false
+                @fact rwlock.readers --> 1
+                @fact take!(c) --> :pretest
+                put!(c, :prelock)
+                @fact lock!(wlock) --> nothing
+
+                # this code should never be reached
+                @fact take!(c) --> :prelock
+                put!(c, :postlock)
+            end
+
+            sleep(1)
+
+            @fact take!(c) --> :prelock
+            put!(c, :posttest)
+
+            @fact rwlock.writer --> false
+            @fact rwlock.readers --> 1
+        end
+    end
+
 end
