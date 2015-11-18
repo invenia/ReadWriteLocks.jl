@@ -12,6 +12,115 @@ facts("Single-threaded tests") do
         @fact read_lock(rwlock) --> rwlock.read_lock
         @fact write_lock(rwlock) --> rwlock.write_lock
     end
+
+    context("Do block") do
+        context("Pass-through") do
+            context("Read locks") do
+                rwlock = ReadWriteLock()
+
+                ret1 = lock!(read_lock(rwlock)) do
+                    @fact rwlock.writer --> false
+                    @fact rwlock.readers --> 1
+
+                    ret2 = lock!(read_lock(rwlock)) do
+                        @fact rwlock.writer --> false
+                        @fact rwlock.readers --> 2
+
+                        return 4
+                    end
+
+                    @fact ret2 --> 4
+
+                    @fact rwlock.writer --> false
+                    @fact rwlock.readers --> 1
+
+                    return 3
+                end
+
+                @fact ret1 --> 3
+
+                @fact rwlock.writer --> false
+                @fact rwlock.readers --> 0
+            end
+
+            context("Write lock") do
+                rwlock = ReadWriteLock()
+
+                ret = lock!(write_lock(rwlock)) do
+                    @fact rwlock.writer --> true
+                    @fact rwlock.readers --> 0
+
+                    return 5
+                end
+
+                @fact ret --> 5
+
+                @fact rwlock.writer --> false
+                @fact rwlock.readers --> 0
+            end
+        end
+
+        context("Exception") do
+            context("Read locks") do
+                rwlock = ReadWriteLock()
+
+                reached1 = false
+                try
+                    lock!(read_lock(rwlock)) do
+                        @fact rwlock.writer --> false
+                        @fact rwlock.readers --> 1
+
+                        reached2 = false
+                        try
+                            lock!(read_lock(rwlock)) do
+                                @fact rwlock.writer --> false
+                                @fact rwlock.readers --> 2
+
+                                error("Whoops!")
+                            end
+                        catch
+                            reached2 = true
+                        end
+
+                        @fact reached2 --> true
+
+                        @fact rwlock.writer --> false
+                        @fact rwlock.readers --> 1
+
+                        error("Whoops!")
+                    end
+                catch
+                    reached1 = true
+                end
+
+                @fact reached1 --> true
+
+                @fact rwlock.writer --> false
+                @fact rwlock.readers --> 0
+            end
+
+            context("Write lock") do
+                rwlock = ReadWriteLock()
+
+                reached = false
+                try
+                    lock!(write_lock(rwlock)) do
+                        @fact rwlock.writer --> true
+                        @fact rwlock.readers --> 0
+
+                        error("Whoops!")
+                    end
+                catch
+                    reached = true
+                end
+
+                @fact reached --> true
+
+                @fact rwlock.writer --> false
+                @fact rwlock.readers --> 0
+            end
+        end
+    end
 end
 
 facts("Two-threaded tests") do

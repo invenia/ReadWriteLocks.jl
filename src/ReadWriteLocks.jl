@@ -111,4 +111,15 @@ function unlock!(write_lock::WriteLock)
     return nothing
 end
 
+# Do block
+function lock!(func::Function, lock::Union{ReadLock, WriteLock})
+    lock!(lock)
+
+    try
+        return func()
+    finally
+        unlock!(lock)
+    end
+end
+
 end # module
