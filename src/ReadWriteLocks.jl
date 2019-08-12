@@ -1,7 +1,7 @@
 module ReadWriteLocks
 
 using Base: lock, unlock
-if VERSION < v"1.2.0-"
+if VERSION < v"1.2.0-DEV.28"
     using Base.Threads: AbstractLock
 else
     using Base: AbstractLock
