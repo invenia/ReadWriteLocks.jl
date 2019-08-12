@@ -3,6 +3,11 @@ using Test
 
 @testset "ReadWriteLock" begin
 
+@testset "Constructor" begin
+    @test ReadWriteLock() isa ReadWriteLock{ReentrantLock}
+    @test ReadWriteLock(0, false, Threads.Mutex()) isa ReadWriteLock{Threads.Mutex}
+end
+
 @testset "Single-threaded tests" begin
     @testset "Initialization" begin
         rwlock = ReadWriteLock()
