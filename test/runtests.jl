@@ -1,2 +1,6 @@
-# write your own tests here
-include("singlethreaded.jl")
+using ReadWriteLocks
+using Test
+
+@testset "ReadWriteLocks" begin
+    include("singlethreaded.jl")
+end

@@ -1,58 +1,59 @@
-using FactCheck
 using ReadWriteLocks
+using Test
 
-facts("Single-threaded tests") do
-    context("Initialization") do
+@testset "Single-threaded tests" begin
+    @testset "Initialization" begin
         rwlock = ReadWriteLock()
 
-        @fact rwlock.read_lock.rwlock --> rwlock
-        @fact rwlock.write_lock.rwlock --> rwlock
-        @fact rwlock.readers --> 0
-        @fact rwlock.writer --> false
-        @fact read_lock(rwlock) --> rwlock.read_lock
-        @fact write_lock(rwlock) --> rwlock.write_lock
+        @test rwlock.read_lock.rwlock == rwlock
+        @test rwlock.write_lock.rwlock == rwlock
+        @test rwlock.readers == 0
+        @test rwlock.writer == false
+        @test read_lock(rwlock) == rwlock.read_lock
+        @test write_lock(rwlock) == rwlock.write_lock
     end
 end
 
-facts("Two-threaded tests") do
-    context("Read locks") do
+@testset "Two-threaded tests" begin
+    @testset "Read locks" begin
         NUM_LOCKS = 10
 
-        context("$NUM_LOCKS locks") do
+        @testset "$NUM_LOCKS locks" begin
             rwlock = ReadWriteLock()
             rlock = read_lock(rwlock)
 
             @async begin
-                @fact rwlock.writer --> false
-                @fact rwlock.readers --> 0
+                @test rwlock.writer == false
+                @test rwlock.readers == 0
                 for i = 1:NUM_LOCKS
-                    @fact lock!(rlock) --> nothing
-                    @fact rwlock.readers --> i
+                    @test lock!(rlock) == nothing
+                    # lock(rlock)
+                    @test rwlock.readers == i
                 end
             end
 
             sleep(1)
 
-            @fact rwlock.readers --> NUM_LOCKS
+            @test rwlock.readers == NUM_LOCKS
 
             @async begin
-                @fact rwlock.writer --> false
-                @fact rwlock.readers --> NUM_LOCKS
-                for i = NUM_LOCKS:-1:1
-                    @fact unlock!(rlock) --> nothing
-                    @fact rwlock.readers --> i - 1
+                @test rwlock.writer == false
+                @test rwlock.readers == NUM_LOCKS
+                for i in NUM_LOCKS:-1:1
+                    @test unlock!(rlock) == nothing
+                    @test rwlock.readers == i - 1
                 end
-                @fact rwlock.readers --> 0
+                @test rwlock.readers == 0
             end
 
             sleep(1)
 
-            @fact rwlock.readers --> 0
+            @test rwlock.readers == 0
         end
     end
 
-    context("Write locks") do
-        context("two locks") do
+    @testset "Write locks" begin
+        @testset "two locks" begin
             rwlock = ReadWriteLock()
             wlock = write_lock(rwlock)
 
@@ -60,30 +61,30 @@ facts("Two-threaded tests") do
             put!(c, :pretest)
 
             @async begin
-                @fact rwlock.writer --> false
-                @fact rwlock.readers --> 0
-                @fact lock!(wlock) --> nothing
-                @fact rwlock.writer --> true
-                @fact rwlock.readers --> 0
-                @fact take!(c) --> :pretest
+                @test rwlock.writer == false
+                @test rwlock.readers == 0
+                @test lock!(wlock) == nothing
+                @test rwlock.writer == true
+                @test rwlock.readers == 0
+                @test take!(c) == :pretest
                 put!(c, :prelock)
-                @fact lock!(wlock) --> nothing
+                @test lock!(wlock) == nothing
 
                 # this code should never be reached
-                @fact take!(c) --> :prelock
+                @test take!(c) == :prelock
                 put!(c, :postlock)
             end
 
             sleep(1)
 
-            @fact take!(c) --> :prelock
+            @test take!(c) == :prelock
             put!(c, :posttest)
 
-            @fact rwlock.writer --> true
-            @fact rwlock.readers --> 0
+            @test rwlock.writer == true
+            @test rwlock.readers == 0
         end
 
-        context("unlock") do
+        @testset "unlock" begin
             rwlock = ReadWriteLock()
             wlock = write_lock(rwlock)
 
@@ -91,30 +92,30 @@ facts("Two-threaded tests") do
             put!(c, :pretest)
 
             @async begin
-                @fact rwlock.writer --> false
-                @fact rwlock.readers --> 0
-                @fact lock!(wlock) --> nothing
-                @fact rwlock.writer --> true
-                @fact rwlock.readers --> 0
-                @fact take!(c) --> :pretest
+                @test rwlock.writer == false
+                @test rwlock.readers == 0
+                @test lock!(wlock) == nothing
+                @test rwlock.writer == true
+                @test rwlock.readers == 0
+                @test take!(c) == :pretest
                 put!(c, :preunlock)
-                @fact unlock!(wlock) --> nothing
-                @fact take!(c) --> :preunlock
+                @test unlock!(wlock) == nothing
+                @test take!(c) == :preunlock
                 put!(c, :postunlock)
             end
 
             sleep(1)
 
-            @fact take!(c) --> :postunlock
+            @test take!(c) == :postunlock
             put!(c, :posttest)
 
-            @fact rwlock.writer --> false
-            @fact rwlock.readers --> 0
+            @test rwlock.writer == false
+            @test rwlock.readers == 0
         end
     end
 
-    context("read and write locks") do
-        context("write then read") do
+    @testset "read and write locks" begin
+        @testset "write then read" begin
             rwlock = ReadWriteLock()
             wlock = write_lock(rwlock)
             rlock = read_lock(rwlock)
@@ -123,30 +124,30 @@ facts("Two-threaded tests") do
             put!(c, :pretest)
 
             @async begin
-                @fact rwlock.writer --> false
-                @fact rwlock.readers --> 0
-                @fact lock!(wlock) --> nothing
-                @fact rwlock.writer --> true
-                @fact rwlock.readers --> 0
-                @fact take!(c) --> :pretest
+                @test rwlock.writer == false
+                @test rwlock.readers == 0
+                @test lock!(wlock) == nothing
+                @test rwlock.writer == true
+                @test rwlock.readers == 0
+                @test take!(c) == :pretest
                 put!(c, :prelock)
-                @fact lock!(rlock) --> nothing
+                @test lock!(rlock) == nothing
 
                 # this code should never be reached
-                @fact take!(c) --> :prelock
+                @test take!(c) == :prelock
                 put!(c, :postlock)
             end
 
             sleep(1)
 
-            @fact take!(c) --> :prelock
+            @test take!(c) == :prelock
             put!(c, :posttest)
 
-            @fact rwlock.writer --> true
-            @fact rwlock.readers --> 0
+            @test rwlock.writer == true
+            @test rwlock.readers == 0
         end
 
-        context("read then write") do
+        @testset "read then write" begin
             rwlock = ReadWriteLock()
             wlock = write_lock(rwlock)
             rlock = read_lock(rwlock)
@@ -155,27 +156,27 @@ facts("Two-threaded tests") do
             put!(c, :pretest)
 
             @async begin
-                @fact rwlock.writer --> false
-                @fact rwlock.readers --> 0
-                @fact lock!(rlock) --> nothing
-                @fact rwlock.writer --> false
-                @fact rwlock.readers --> 1
-                @fact take!(c) --> :pretest
+                @test rwlock.writer == false
+                @test rwlock.readers == 0
+                @test lock!(rlock) == nothing
+                @test rwlock.writer == false
+                @test rwlock.readers == 1
+                @test take!(c) == :pretest
                 put!(c, :prelock)
-                @fact lock!(wlock) --> nothing
+                @test lock!(wlock) == nothing
 
                 # this code should never be reached
-                @fact take!(c) --> :prelock
+                @test take!(c) == :prelock
                 put!(c, :postlock)
             end
 
             sleep(1)
 
-            @fact take!(c) --> :prelock
+            @test take!(c) == :prelock
             put!(c, :posttest)
 
-            @fact rwlock.writer --> false
-            @fact rwlock.readers --> 1
+            @test rwlock.writer == false
+            @test rwlock.readers == 1
         end
     end
 
