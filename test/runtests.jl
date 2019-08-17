@@ -33,7 +33,8 @@ end  # Single-threaded
                 @test rwlock.writer == false
                 @test rwlock.readers == 0
                 for i = 1:NUM_LOCKS
-                    lock!(rlock)
+                    @test lock!(rlock) == nothing
+                    # lock(rlock)
                     @test rwlock.readers == i
                 end
             end
@@ -46,7 +47,7 @@ end  # Single-threaded
                 @test rwlock.writer == false
                 @test rwlock.readers == NUM_LOCKS
                 for i in NUM_LOCKS:-1:1
-                    unlock!(rlock)
+                    @test unlock!(rlock) == nothing
                     @test rwlock.readers == i - 1
                 end
                 @test rwlock.readers == 0
@@ -69,12 +70,12 @@ end  # Single-threaded
             @async begin
                 @test rwlock.writer == false
                 @test rwlock.readers == 0
-                lock!(rlock)
+                @test lock!(wlock) == nothing
                 @test rwlock.writer == true
                 @test rwlock.readers == 0
                 @test take!(c) == :pretest
                 put!(c, :prelock)
-                lock!(rlock)
+                @test lock!(wlock) == nothing
 
                 # this code should never be reached
                 @test take!(c) == :prelock
@@ -100,12 +101,12 @@ end  # Single-threaded
             @async begin
                 @test rwlock.writer == false
                 @test rwlock.readers == 0
-                lock!(rlock)
+                @test lock!(wlock) == nothing
                 @test rwlock.writer == true
                 @test rwlock.readers == 0
                 @test take!(c) == :pretest
                 put!(c, :preunlock)
-                unlock!(rlock)
+                @test unlock!(wlock) == nothing
                 @test take!(c) == :preunlock
                 put!(c, :postunlock)
             end
@@ -132,12 +133,12 @@ end  # Single-threaded
             @async begin
                 @test rwlock.writer == false
                 @test rwlock.readers == 0
-                lock!(wlock)
+                @test lock!(wlock) == nothing
                 @test rwlock.writer == true
                 @test rwlock.readers == 0
                 @test take!(c) == :pretest
                 put!(c, :prelock)
-                lock!(wlock)
+                @test lock!(rlock) == nothing
 
                 # this code should never be reached
                 @test take!(c) == :prelock
@@ -164,12 +165,12 @@ end  # Single-threaded
             @async begin
                 @test rwlock.writer == false
                 @test rwlock.readers == 0
-                lock!(wlock)
+                @test lock!(rlock) == nothing
                 @test rwlock.writer == false
                 @test rwlock.readers == 1
                 @test take!(c) == :pretest
                 put!(c, :prelock)
-                lock!(wlock)
+                @test lock!(wlock) == nothing
 
                 # this code should never be reached
                 @test take!(c) == :prelock
