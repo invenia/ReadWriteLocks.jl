@@ -1,42 +1,39 @@
 module ReadWriteLocks
 
+using Base: lock, unlock
+if VERSION < v"1.2.0-DEV.28"
+    using Base.Threads: AbstractLock
+else
+    using Base: AbstractLock
+end
+
 export ReadWriteLock, read_lock, write_lock, lock!, unlock!
 
-if isdefined(Base, :lock!)
-    import Base: lock!
-end
-
-if isdefined(Base, :unlock!)
-    import Base: unlock!
-end
-
-if !isdefined(Base, :Mutex)
-    typealias Mutex ReentrantLock
-
-    lock!(x::Mutex) = lock(x)
-    unlock!(x::Mutex) = unlock(x)
-end
-
-abstract _Lock
-
-immutable ReadLock{T<:_Lock}
+struct ReadLock{T<:AbstractLock}
     rwlock::T
 end
 
-immutable WriteLock{T<:_Lock}
+struct WriteLock{T<:AbstractLock}
     rwlock::T
 end
 
-type ReadWriteLock <: _Lock
+# Need Julia VERSION > v"1.2.0-DEV.28` to have `ReentrantLock <: AbstractLock`
+LockTypes = Union{AbstractLock, ReentrantLock}
+mutable struct ReadWriteLock{L<:LockTypes} <: AbstractLock
     readers::Int
     writer::Bool
-    lock::Mutex  # reentrant mutex
+    lock::L  # reentrant mutex
     condition::Condition
     read_lock::ReadLock
     write_lock::WriteLock
 
-    function ReadWriteLock()
-        rwlock = new(false, 0, Mutex(), Condition())
+    function ReadWriteLock(
+        readers::Int=0,
+        writer::Bool=false,
+        lock::L=ReentrantLock(),
+        condition::Condition=Condition(),
+    ) where L <: LockTypes
+        rwlock = new{L}(readers, writer, lock, condition)
         rwlock.read_lock = ReadLock(rwlock)
         rwlock.write_lock = WriteLock(rwlock)
 
@@ -49,7 +46,7 @@ write_lock(rwlock::ReadWriteLock) = rwlock.write_lock
 
 function lock!(read_lock::ReadLock)
     rwlock = read_lock.rwlock
-    lock!(rwlock.lock)
+    lock(rwlock.lock)
 
     try
         while rwlock.writer
@@ -58,7 +55,7 @@ function lock!(read_lock::ReadLock)
 
         rwlock.readers += 1
     finally
-        unlock!(rwlock.lock)
+        unlock(rwlock.lock)
     end
 
     return nothing
@@ -66,7 +63,7 @@ end
 
 function unlock!(read_lock::ReadLock)
     rwlock = read_lock.rwlock
-    lock!(rwlock.lock)
+    lock(rwlock.lock)
 
     try
         rwlock.readers -= 1
@@ -74,7 +71,7 @@ function unlock!(read_lock::ReadLock)
             notify(rwlock.condition; all=true)
         end
     finally
-        unlock!(rwlock.lock)
+        unlock(rwlock.lock)
     end
 
     return nothing
@@ -82,7 +79,7 @@ end
 
 function lock!(write_lock::WriteLock)
     rwlock = write_lock.rwlock
-    lock!(rwlock.lock)
+    lock(rwlock.lock)
 
     try
         while rwlock.readers > 0 || rwlock.writer
@@ -91,7 +88,7 @@ function lock!(write_lock::WriteLock)
 
         rwlock.writer = true
     finally
-        unlock!(rwlock.lock)
+        unlock(rwlock.lock)
     end
 
     return nothing
@@ -99,13 +96,13 @@ end
 
 function unlock!(write_lock::WriteLock)
     rwlock = write_lock.rwlock
-    lock!(rwlock.lock)
+    lock(rwlock.lock)
 
     try
         rwlock.writer = false
         notify(rwlock.condition; all=true)
     finally
-        unlock!(rwlock.lock)
+        unlock(rwlock.lock)
     end
 
     return nothing
