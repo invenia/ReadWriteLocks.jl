@@ -1,7 +1,6 @@
 # ReadWriteLocks
 
 [![Build Status](https://travis-ci.org/invenia/ReadWriteLocks.jl.svg?branch=master)](https://travis-ci.org/invenia/ReadWriteLocks.jl)
-[![Build status](https://ci.appveyor.com/api/projects/status/qxqgjon7ocblik3q?svg=true)](https://ci.appveyor.com/project/iamed2/readwritelocks-jl)
 [![codecov.io](https://codecov.io/github/invenia/ReadWriteLocks.jl/coverage.svg?branch=master)](https://codecov.io/github/invenia/ReadWriteLocks.jl?branch=master)
 
 ## Usage
@@ -27,7 +26,7 @@ unlock!(rlock)
 Write locks provide the same interface.
 
 You can acquire any number of read locks at a time.
-A read lock will block if a write lock has been acquired. 
+A read lock will block if a write lock has been acquired.
 A write lock will block if a read lock or write lock has been acquired.
 =#
 ```
