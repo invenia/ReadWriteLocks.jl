@@ -1,6 +1,6 @@
 # ReadWriteLocks
 
-[![Build Status](https://travis-ci.org/invenia/ReadWriteLocks.jl.svg?branch=master)](https://travis-ci.org/invenia/ReadWriteLocks.jl)
+[![CI](https://github.com/Invenia/ReadWriteLocks.jl/workflows/CI/badge.svg)](https://github.com/Invenia/ReadWriteLocks.jl/actions?query=workflow%3ACI)
 [![codecov.io](https://codecov.io/github/invenia/ReadWriteLocks.jl/coverage.svg?branch=master)](https://codecov.io/github/invenia/ReadWriteLocks.jl?branch=master)
 
 ## Usage

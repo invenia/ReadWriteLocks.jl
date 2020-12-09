@@ -5,7 +5,7 @@ using Test
 
 @testset "Constructor" begin
     @test ReadWriteLock() isa ReadWriteLock{ReentrantLock}
-    @test ReadWriteLock(0, false, Threads.Mutex()) isa ReadWriteLock{Threads.Mutex}
+    @test ReadWriteLock(0, false, Threads.SpinLock()) isa ReadWriteLock{Threads.SpinLock}
 end
 
 @testset "Single-threaded tests" begin
