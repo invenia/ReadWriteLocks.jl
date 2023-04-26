@@ -101,8 +101,8 @@ Base.unlock(rwlock::ReadWriteLock) = unlock(get_write_lock(rwlock))
 # Reading doesn't count as locked.
 Base.islocked(rwlock::ReadWriteLock) = iswriting(rwlock)
 # To be writing we must have no readers, else `writer` just indicates a writer is waiting.
-iswriting(rwlock::ReadWriteLock) = @lock rwlock.condition ((rwlock.readers == 0) && rwlock.writer)
-isreading(rwlock::ReadWriteLock) = @lock rwlock.condition (rwlock.readers > 0)
+iswriting(rwlock::ReadWriteLock) = Base.@lock rwlock.condition ((rwlock.readers == 0) && rwlock.writer)
+isreading(rwlock::ReadWriteLock) = Base.@lock rwlock.condition (rwlock.readers > 0)
 
 readlock(rwlock::ReadWriteLock) = lock(get_read_lock(rwlock))
 readunlock(rwlock::ReadWriteLock) = unlock(get_read_lock(rwlock))
