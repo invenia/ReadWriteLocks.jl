@@ -1,13 +1,9 @@
 module ReadWriteLocks
 
-using Base: lock, unlock
-if VERSION < v"1.2.0-DEV.28"
-    using Base.Threads: AbstractLock
-else
-    using Base: AbstractLock
-end
+using Base: AbstractLock, lock, unlock
 
-export ReadWriteLock, read_lock, write_lock, lock!, unlock!
+export ReadWriteLock, get_read_lock, get_write_lock
+export readlock, readunlock
 
 struct ReadLock{T<:AbstractLock}
     rwlock::T
@@ -17,95 +13,98 @@ struct WriteLock{T<:AbstractLock}
     rwlock::T
 end
 
-# Need Julia VERSION > v"1.2.0-DEV.28` to have `ReentrantLock <: AbstractLock`
-LockTypes = Union{AbstractLock, ReentrantLock}
-mutable struct ReadWriteLock{L<:LockTypes} <: AbstractLock
+mutable struct ReadWriteLock <: AbstractLock
     readers::Int
     writer::Bool
-    lock::L  # reentrant mutex
-    condition::Condition
+    condition::Threads.Condition
     read_lock::ReadLock
     write_lock::WriteLock
 
     function ReadWriteLock(
         readers::Int=0,
         writer::Bool=false,
-        lock::L=ReentrantLock(),
-        condition::Condition=Condition(),
-    ) where L <: LockTypes
-        rwlock = new{L}(readers, writer, lock, condition)
+        condition::Threads.Condition=Threads.Condition(),
+    )
+        rwlock = new(readers, writer, condition)
         rwlock.read_lock = ReadLock(rwlock)
         rwlock.write_lock = WriteLock(rwlock)
-
         return rwlock
     end
 end
 
-read_lock(rwlock::ReadWriteLock) = rwlock.read_lock
-write_lock(rwlock::ReadWriteLock) = rwlock.write_lock
+get_read_lock(rwlock::ReadWriteLock) = rwlock.read_lock
+get_write_lock(rwlock::ReadWriteLock) = rwlock.write_lock
 
-function lock!(read_lock::ReadLock)
+function Base.lock(read_lock::ReadLock)
     rwlock = read_lock.rwlock
-    lock(rwlock.lock)
-
+    lock(rwlock.condition)
     try
         while rwlock.writer
             wait(rwlock.condition)
         end
-
         rwlock.readers += 1
     finally
-        unlock(rwlock.lock)
+        # @debug "readlock done" rwlock.readers rwlock.writer
+        unlock(rwlock.condition)
     end
-
     return nothing
 end
 
-function unlock!(read_lock::ReadLock)
+function Base.unlock(read_lock::ReadLock)
     rwlock = read_lock.rwlock
-    lock(rwlock.lock)
-
+    lock(rwlock.condition)
     try
         rwlock.readers -= 1
         if rwlock.readers == 0
             notify(rwlock.condition; all=true)
         end
     finally
-        unlock(rwlock.lock)
+        # @debug "readunlock done" rwlock.readers rwlock.writer
+        unlock(rwlock.condition)
     end
-
     return nothing
 end
 
-function lock!(write_lock::WriteLock)
+function Base.lock(write_lock::WriteLock)
     rwlock = write_lock.rwlock
-    lock(rwlock.lock)
-
+    lock(rwlock.condition)
     try
-        while rwlock.readers > 0 || rwlock.writer
+        while rwlock.writer
             wait(rwlock.condition)
         end
-
         rwlock.writer = true
+        while rwlock.readers > 0
+            wait(rwlock.condition)
+        end
     finally
-        unlock(rwlock.lock)
+        unlock(rwlock.condition)
+        # @debug "lock done" rwlock.readers rwlock.writer
     end
-
     return nothing
 end
 
-function unlock!(write_lock::WriteLock)
+function Base.unlock(write_lock::WriteLock)
     rwlock = write_lock.rwlock
-    lock(rwlock.lock)
-
+    lock(rwlock.condition)
     try
         rwlock.writer = false
         notify(rwlock.condition; all=true)
     finally
-        unlock(rwlock.lock)
+        # @debug "unlock done" rwlock.readers rwlock.writer
+        unlock(rwlock.condition)
     end
-
     return nothing
 end
+
+Base.lock(rwlock::ReadWriteLock) = lock(get_write_lock(rwlock))
+Base.unlock(rwlock::ReadWriteLock) = unlock(get_write_lock(rwlock))
+# Reading doesn't count as locked.
+Base.islocked(rwlock::ReadWriteLock) = iswriting(rwlock)
+# To be writing we must have no readers, else `writer` just indicates a writer is waiting.
+iswriting(rwlock::ReadWriteLock) = @lock rwlock.condition ((rwlock.readers == 0) && rwlock.writer)
+isreading(rwlock::ReadWriteLock) = @lock rwlock.condition (rwlock.readers > 0)
+
+readlock(rwlock::ReadWriteLock) = lock(get_read_lock(rwlock))
+readunlock(rwlock::ReadWriteLock) = unlock(get_read_lock(rwlock))
 
 end # module
